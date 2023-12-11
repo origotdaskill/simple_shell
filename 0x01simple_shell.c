@@ -8,6 +8,9 @@
 #define MAX_INPUT_SIZE 1024
 #define MAX_PATH_SIZE 1024
 
+/* Declare environ if not available */
+extern char **environ;
+
 /**
  * displayPrompt - Displays the shell prompt
  */
@@ -33,6 +36,11 @@ int commandExists(char *command);
 void builtinExit(void);
 
 /**
+ * builtinEnv - Implements the env built-in command
+ */
+void builtinEnv(void);
+
+/**
  * main - Entry point of the simple shell program
  * Return: Always 0 (success)
  */
@@ -42,8 +50,8 @@ int main(void) {
     char *token;
 
     while (1) {
-        int i;
-        
+        int i ;
+
         displayPrompt();
 
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
@@ -56,6 +64,9 @@ int main(void) {
         if (strcmp(input, "exit") == 0) {
             builtinExit();
             break;
+        } else if (strcmp(input, "env") == 0) {
+            builtinEnv();
+            continue;
         }
 
         token = strtok(input, " ");
@@ -134,7 +145,7 @@ int commandExists(char *command) {
     }
 
     free(path_copy);
-    return 0;
+    return 0; 
 }
 
 /**
@@ -145,3 +156,13 @@ void builtinExit(void) {
     exit(EXIT_SUCCESS);
 }
 
+
+/**
+ * builtinEnv - Implements the env built-in command
+ */
+void builtinEnv(void) {
+    char **env;
+    for (env = environ; *env != NULL; env++) {
+        printf("%s\n", *env);
+    }
+}
