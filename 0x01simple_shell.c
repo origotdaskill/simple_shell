@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 
 #define MAX_INPUT_SIZE 1024
+#define MAX_PATH_SIZE 1024
 
 /**
  * displayPrompt - Displays the shell prompt
@@ -20,6 +21,18 @@ void displayPrompt(void);
 void executeCommand(char *command, char **arguments);
 
 /**
+ * commandExists - Checks if a command exists in the system's directories
+ * @command: The command to check for existence
+ * Return: 1 if the command exists, 0 otherwise
+ */
+int commandExists(char *command);
+
+/**
+ * builtinExit - Implements the exit built-in command
+ */
+void builtinExit(void);
+
+/**
  * main - Entry point of the simple shell program
  * Return: Always 0 (success)
  */
@@ -29,7 +42,8 @@ int main(void) {
     char *token;
 
     while (1) {
-	int i ;
+        int i;
+        
         displayPrompt();
 
         if (fgets(input, MAX_INPUT_SIZE, stdin) == NULL) {
@@ -40,12 +54,13 @@ int main(void) {
         input[strcspn(input, "\n")] = '\0';
 
         if (strcmp(input, "exit") == 0) {
+            builtinExit();
             break;
         }
 
         token = strtok(input, " ");
 
-	i = 0;
+        i = 0;
         while (token != NULL) {
             arguments[i++] = token;
             token = strtok(NULL, " ");
@@ -74,6 +89,11 @@ void executeCommand(char *command, char **arguments) {
     pid_t child_pid;
     int status;
 
+    if (!commandExists(command)) {
+        printf("%s: command not found\n", command);
+        return;
+    }
+
     child_pid = fork();
 
     if (child_pid == -1) {
@@ -89,5 +109,39 @@ void executeCommand(char *command, char **arguments) {
     } else {
         waitpid(child_pid, &status, 0);
     }
+}
+
+/**
+ * commandExists - Checks if a command exists in the system's directories
+ * @command: The command to check for existence
+ * Return: 1 if the command exists, 0 otherwise
+ */
+int commandExists(char *command) {
+    char *path = getenv("PATH");
+    char *path_copy = strdup(path);
+    char *token = strtok(path_copy, ":");
+
+    while (token != NULL) {
+        char full_path[MAX_PATH_SIZE];
+        snprintf(full_path, sizeof(full_path), "%s/%s", token, command);
+
+        if (access(full_path, F_OK) == 0) {
+            free(path_copy);
+            return 1; 
+        }
+
+        token = strtok(NULL, ":");
+    }
+
+    free(path_copy);
+    return 0;
+}
+
+/**
+ * builtinExit - Implements the exit built-in command
+ */
+void builtinExit(void) {
+    printf("Exiting the shell\n");
+    exit(EXIT_SUCCESS);
 }
 

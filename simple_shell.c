@@ -1,6 +1,6 @@
 /*
- * Description: Example code following Betty style guidelines.
- * Author: Your Name
+ * Description: Betty style guidelines.
+ * Author: walid horri
  * Date: December 10, 2023
  */
 
