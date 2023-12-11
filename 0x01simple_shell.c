@@ -62,7 +62,7 @@ int main(void) {
  * displayPrompt - Displays the shell prompt
  */
 void displayPrompt(void) {
-    printf("#cisfun$ ");
+    printf(":) ");
 }
 
 /**
