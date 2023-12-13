@@ -10,18 +10,23 @@ extern char **environ;
 
 #define MAX_ARGS 10
 
+/**
+ * main - Simple shell program
+ *
+ * Return: Always EXIT_SUCCESS
+ */
 int main(void)
 {
     char *input = NULL;
     size_t len = 0;
     ssize_t readBytes;
 
-    char *token;
-    char *args[MAX_ARGS];
-    int argCount;
-
     while (1)
     {
+        char *token;
+        char *args[MAX_ARGS];
+        int argCount;
+
         printf("$ ");
         fflush(stdout);
 
