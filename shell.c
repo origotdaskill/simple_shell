@@ -52,7 +52,13 @@ int main(void)
         }
         args[argCount] = NULL;
 
-        if (access(args[0], X_OK) == 0)
+        if (strcmp(args[0], "exit") == 0)
+        {
+            // Exit the shell
+            free(input);
+            exit(EXIT_SUCCESS);
+        }
+        else if (access(args[0], X_OK) == 0)
         {
             if (fork() == 0)
             {
