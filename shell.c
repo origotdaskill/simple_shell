@@ -1,118 +1,67 @@
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <sys/wait.h>
 
-#define MAX_ARGS 10
+#define BUFFER_SIZE 1024
 
+/**
+ * custom_getline - Custom implementation of getline function
+ *
+ * Return: Dynamically allocated string containing user input
+ */
+char *custom_getline(void)
+{
+	static char buffer[BUFFER_SIZE];
+	static size_t pos = 0;
+	static ssize_t bytesRead = 0;
+
+	char *line = NULL;
+	size_t lineSize = 0;
+
+	while (1)
+	{
+		if (pos == (size_t)bytesRead)
+		{
+			bytesRead = read(STDIN_FILENO, buffer, BUFFER_SIZE);
+
+			if (bytesRead <= 0)
+			{
+				if (lineSize > 0)
+					return line;
+				else
+					return NULL;
+			}
+
+			pos = 0;
+		}
+
+		char currentChar = buffer[pos++];
+
+		if (currentChar == '\n' || currentChar == EOF)
+		{
+			line[lineSize] = '\0';
+			return line;
+		}
+
+		line = realloc(line, lineSize + 1);
+		line[lineSize++] = currentChar;
+	}
+}
+
+/**
+ * main - Entry point of the program
+ *
+ * Return: Always 0
+ */
 int main(void)
 {
-    char *input = NULL;
-    size_t len = 0;
-    ssize_t readBytes;
+	char *input;
 
-    while (1)
-    {
-        printf("$ ");
-        fflush(stdout);
+	while ((input = custom_getline()) != NULL)
+	{
+		printf("Input: %s\n", input);
+		free(input);
+	}
 
-        readBytes = getline(&input, &len, stdin);
-
-        if (readBytes == -1)
-        {
-            if (feof(stdin))
-            {
-                printf("\n");
-                break;
-            }
-            else
-            {
-                perror("getline");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        if (input[readBytes - 1] == '\n')
-        {
-            input[readBytes - 1] = '\0';
-        }
-
-        char *token;
-        char *args[MAX_ARGS];
-        int argCount = 0;
-
-        token = strtok(input, " ");
-        while (token != NULL)
-        {
-            args[argCount++] = token;
-            token = strtok(NULL, " ");
-        }
-        args[argCount] = NULL;
-
-        if (strcmp(args[0], "exit") == 0)
-        {
-            // Exit the shell
-            free(input);
-            exit(EXIT_SUCCESS);
-        }
-        else if (access(args[0], X_OK) == 0)
-        {
-            if (fork() == 0)
-            {
-                execvp(args[0], args);
-                perror("execvp");
-                exit(EXIT_FAILURE);
-            }
-            else
-            {
-                wait(NULL);
-            }
-        }
-        else
-        {
-            char *path = getenv("PATH");
-            char *pathCopy = strdup(path);
-
-            if (pathCopy == NULL)
-            {
-                perror("strdup");
-                exit(EXIT_FAILURE);
-            }
-
-            token = strtok(pathCopy, ":");
-            while (token != NULL)
-            {
-                char fullPath[1024];
-                snprintf(fullPath, sizeof(fullPath), "%s/%s", token, args[0]);
-
-                if (access(fullPath, X_OK) == 0)
-                {
-                    if (fork() == 0)
-                    {
-                        execv(fullPath, args);
-                        perror("execv");
-                        exit(EXIT_FAILURE);
-                    }
-                    else
-                    {
-                        wait(NULL);
-                        break;
-                    }
-                }
-
-                token = strtok(NULL, ":");
-            }
-
-            free(pathCopy);
-
-            printf("%s: command not found\n", args[0]);
-        }
-    }
-
-    free(input);
-
-    return EXIT_SUCCESS;
+	return 0;
 }
