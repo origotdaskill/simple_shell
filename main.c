@@ -7,17 +7,12 @@
 
 #define BUFFER_SIZE 1024
 
-/**
- * main - Simple UNIX command line interpreter
- *
- * Return: Always 0.
- */
 int main(void)
 {
-    char buffer[BUFFER_SIZE];
+    char *buffer = NULL;
     ssize_t read_bytes;
     size_t len = 0;
-
+    pid_t  pid ;
     while (1)
     {
         printf("$ ");
@@ -40,7 +35,7 @@ int main(void)
 
         buffer[strcspn(buffer, "\n")] = '\0';
 
-        pid_t pid = fork();
+        pid = fork();
 
         if (pid == -1)
         {
@@ -50,12 +45,23 @@ int main(void)
 
         if (pid == 0)
         {
-            char *args[] = {buffer, NULL};
+            char **args = malloc(2 * sizeof(char *));
+            if (args == NULL)
+            {
+                perror("Malloc failed");
+                exit(EXIT_FAILURE);
+            }
+
+            args[0] = buffer;
+            args[1] = NULL;
+
             if (execve(buffer, args, NULL) == -1)
             {
                 perror("Command not found");
                 exit(EXIT_FAILURE);
             }
+
+            free(args);
         }
         else
         {
