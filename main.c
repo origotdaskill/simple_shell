@@ -46,9 +46,20 @@ int main(void)
 
         if (pid == 0)
         {
-            if (execlp(buffer, buffer, (char *)NULL) == -1)
+            char **args = (char **)malloc(2 * sizeof(char *));
+            if (args == NULL)
+            {
+                perror("Memory allocation error");
+                exit(EXIT_FAILURE);
+            }
+
+            args[0] = buffer;
+            args[1] = NULL;
+
+            if (execvp(buffer, args) == -1)
             {
                 perror("Command not found");
+                free(args);
                 exit(EXIT_FAILURE);
             }
         }
