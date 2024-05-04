@@ -1,85 +1,73 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include "main.h"
 
-#define BUFFER_SIZE 1024
-
-int main(void)
+/**
+ * free_data - frees data structure
+ *
+ * @datash: data structure
+ * Return: no return
+ */
+void free_data(data_shell *datash)
 {
-    char *buffer = NULL;
-    ssize_t read_bytes;
-    size_t len = 0;
-    pid_t pid ;
+	unsigned int i;
 
-    while (1)
-    {
-        printf("$ ");
+	for (i = 0; datash->_environ[i]; i++)
+	{
+		free(datash->_environ[i]);
+	}
 
-        read_bytes = getline(&buffer, &len, stdin);
-
-        if (read_bytes == -1)
-        {
-            if (feof(stdin))
-            {
-                printf("\n");
-                break;
-            }
-            else
-            {
-                perror("Error reading input");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        buffer[strcspn(buffer, "\n")] = '\0';
-
-        pid = fork();
-
-        if (pid == -1)
-        {
-            perror("Fork failed");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pid == 0)
-        {
-            char **args = (char **)malloc(2 * sizeof(char *));
-            if (args == NULL)
-            {
-                perror("Memory allocation error");
-                exit(EXIT_FAILURE);
-            }
-
-            args[0] = buffer;
-            args[1] = NULL;
-
-            if (execvp(buffer, args) == -1)
-            {
-                perror("Command not found");
-                free(args);
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            int status;
-            if (waitpid(pid, &status, 0) == -1)
-            {
-                perror("Error waiting for child process");
-                exit(EXIT_FAILURE);
-            }
-            if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-            {
-                fprintf(stderr, "Command failed with exit status %d\n", WEXITSTATUS(status));
-            }
-        }
-    }
-
-    free(buffer);
-
-    return 0;
+	free(datash->_environ);
+	free(datash->pid);
 }
 
+/**
+ * set_data - Initialize data structure
+ *
+ * @datash: data structure
+ * @av: argument vector
+ * Return: no return
+ */
+void set_data(data_shell *datash, char **av)
+{
+	unsigned int i;
+
+	datash->av = av;
+	datash->input = NULL;
+	datash->args = NULL;
+	datash->status = 0;
+	datash->counter = 1;
+
+	for (i = 0; environ[i]; i++)
+		;
+
+	datash->_environ = malloc(sizeof(char *) * (i + 1));
+
+	for (i = 0; environ[i]; i++)
+	{
+		datash->_environ[i] = _strdup(environ[i]);
+	}
+
+	datash->_environ[i] = NULL;
+	datash->pid = aux_itoa(getpid());
+}
+
+/**
+ * main - Entry point
+ *
+ * @ac: argument count
+ * @av: argument vector
+ *
+ * Return: 0 on success.
+ */
+int main(int ac, char **av)
+{
+	data_shell datash;
+	(void) ac;
+
+	signal(SIGINT, get_sigint);
+	set_data(&datash, av);
+	shell_loop(&datash);
+	free_data(&datash);
+	if (datash.status < 0)
+		return (255);
+	return (datash.status);
+}
